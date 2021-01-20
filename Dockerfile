@@ -24,9 +24,7 @@ RUN         upx wings
 # --------------------------------------- #
 
 # Stage 2 (Final)
-FROM        busybox:1.33.0
-
-RUN         echo "ID=\"busybox\"" > /etc/os-release
+FROM        alpine:alpine:3.13
 
 COPY        --from=builder /app/wings /usr/bin/
 
