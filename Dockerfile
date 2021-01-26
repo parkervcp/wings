@@ -24,7 +24,7 @@ RUN         upx wings
 # --------------------------------------- #
 
 # Stage 2 (Final)
-FROM        alpine:alpine:3.13
+FROM        alpine:3.13
 
 COPY        --from=builder /app/wings /usr/bin/
 
