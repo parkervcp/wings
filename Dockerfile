@@ -26,6 +26,9 @@ RUN         upx wings
 # Stage 2 (Final)
 FROM        alpine:3.13
 
+RUN         apk update -y && \
+            apk add ca-certificates
+
 COPY        --from=builder /app/wings /usr/bin/
 
 CMD         [ "wings", "--config", "/etc/pterodactyl/config.yml" ]
