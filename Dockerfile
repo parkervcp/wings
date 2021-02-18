@@ -26,7 +26,7 @@ RUN         upx wings
 # Stage 2 (Final)
 FROM        alpine:3.13
 
-RUN         apk update -y && \
+RUN         apk update && \
             apk add ca-certificates
 
 COPY        --from=builder /app/wings /usr/bin/
