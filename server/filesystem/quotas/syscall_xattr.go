@@ -39,13 +39,13 @@ const (
 */
 
 const (
-	FS_IOC_FSGETXATTR uintptr = 0x801c581f
-	FS_IOC_FSSETXATTR uintptr = 0x401c5820
+	FS_IOC_FSGETXATTR uintptr = 0x801c581f // https://docs.rs/linux-raw-sys/latest/linux_raw_sys/ioctl/constant.FS_IOC_FSGETXATTR.html
+	FS_IOC_FSSETXATTR uintptr = 0x401c5820 // https://docs.rs/linux-raw-sys/latest/linux_raw_sys/ioctl/constant.FS_IOC_FSSETXATTR.html
 )
 
-// FSXAttr is the struct defining the structure
+// fsXAttr is the struct defining the structure
 // for FS_IOC_FSGETXATTR and FS_IOC_FSSETXATTR
-type FSXAttr struct {
+type fsXAttr struct {
 	XFlags    uint32
 	ExtSize   uint32
 	NextENTs  uint32
@@ -54,32 +54,38 @@ type FSXAttr struct {
 }
 
 // xAttrCtl sets the
-func xAttrCtl(f *os.File, request uintptr, xattr FSXAttr) error {
-	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(), request, uintptr(unsafe.Pointer(&xattr)))
+func xAttrCtl(f *os.File, request uintptr, xattr *fsXAttr) (err error) {
+	attreq := uintptr(unsafe.Pointer(xattr))
+
+	_, _, errno := syscall.RawSyscall(syscall.SYS_IOCTL, f.Fd(), request, attreq)
 
 	if errno != 0 {
 		return os.NewSyscallError("ioctl", errno)
 	}
 
-	return nil
+	return
 }
 
 // getXAttr gets the extended attributes of a file
-func getXAttr(f *os.File) (xattr *FSXAttr, err error) {
-	xattr = new(FSXAttr)
-
-	err = xAttrCtl(f, FS_IOC_FSGETXATTR, *xattr)
-
-	if err != nil {
-		return xattr, err
+func getXAttr(f *os.File) (attr fsXAttr, err error) {
+	if err = xAttrCtl(f, FS_IOC_FSGETXATTR, &attr); err != nil {
+		return
 	}
 
 	return
 }
 
 // setXAttr sets xattr values for the
-func setXAttr(f *os.File, xattr *FSXAttr) (err error) {
-	err = xAttrCtl(f, FS_IOC_FSSETXATTR, *xattr)
+func setXAttr(serverDir *os.File, fsXAttr fsXAttr) (err error) {
+	xAttr, err := getXAttr(serverDir)
+	if err != nil {
+		return err
+	}
+
+	// bitwise add for uint32 X Attributes
+	xAttr.XFlags |= fsXAttr.XFlags
+
+	err = xAttrCtl(serverDir, FS_IOC_FSSETXATTR, &fsXAttr)
 
 	return
 }

@@ -46,6 +46,10 @@ type ConfigurationMeta struct {
 type Configuration struct {
 	mu sync.RWMutex
 
+	// ID is the database id from the panel that is guaranteed to be unique
+	// this is being used for quotas
+	ID int `json:"id"`
+
 	// The unique identifier for the server that should be used when referencing
 	// it against the Panel API (and internally). This will be used when naming
 	// docker containers as well as in log output.
