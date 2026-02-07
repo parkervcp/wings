@@ -14,12 +14,12 @@ import (
 	"github.com/apex/log"
 	"github.com/gammazero/workerpool"
 	"github.com/goccy/go-json"
-
 	"github.com/pelican-dev/wings/config"
 	"github.com/pelican-dev/wings/environment"
 	"github.com/pelican-dev/wings/environment/docker"
 	"github.com/pelican-dev/wings/remote"
 	"github.com/pelican-dev/wings/server/filesystem"
+	"github.com/pelican-dev/wings/server/filesystem/quotas"
 )
 
 type Manager struct {
@@ -192,13 +192,24 @@ func (m *Manager) InitServer(data remote.ServerConfigurationResponse) (*Server, 
 
 	// Setup the base server configuration data which will be used for all of the
 	// remaining functionality in this call.
-	if err := s.SyncWithConfiguration(data); err != nil {
+	if err = s.SyncWithConfiguration(data); err != nil {
 		return nil, errors.WithStackIf(err)
 	}
 
 	s.fs, err = filesystem.New(filepath.Join(config.Get().System.Data, s.ID()), s.DiskSpace(), s.Config().Egg.FileDenylist)
 	if err != nil {
 		return nil, errors.WithStackIf(err)
+	}
+
+	// if quotas are enabled ensure quotas are configured
+	if config.Get().System.Quotas.Enabled {
+		if err = quotas.AddQuota(s.cfg.ID, s.Config().Uuid); err != nil {
+			return nil, errors.WithStackIf(err)
+		}
+
+		if err = quotas.SetQuota(s.Environment.Config().Limits().DiskSpace, s.Config().Uuid); err != nil {
+			return nil, errors.WithStackIf(err)
+		}
 	}
 
 	// Right now we only support a Docker based environment, so I'm going to hard code

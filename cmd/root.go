@@ -23,6 +23,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/gammazero/workerpool"
 	"github.com/mitchellh/colorstring"
+	"github.com/pelican-dev/wings/server/filesystem/quotas"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
@@ -189,6 +190,23 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 	// Just for some nice log output.
 	for _, s := range manager.All() {
 		log.WithField("server", s.ID()).Info("finished loading configuration for server")
+	}
+
+	// if quotas are enabled ensure they are added and enabled.
+	if config.Get().System.Quotas.Enabled {
+		// check if the fs is supported
+		if err = quotas.IsSupportedFS(); err != nil {
+			log.WithField("error", err).Fatal("failed to validate quota configuration")
+		}
+
+		// validate all servers are configured for quotas
+		for _, s := range manager.All() {
+			if err = quotas.AddQuota(s.Config().ID, s.Config().Uuid); err != nil {
+				log.WithField("error", err).Error("failed to add server to quota list")
+			}
+		}
+
+		log.Info("quotas configured")
 	}
 
 	states, err := manager.ReadStates()
