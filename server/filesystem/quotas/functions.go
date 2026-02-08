@@ -56,13 +56,14 @@ func IsSupportedFS() (err error) {
 		// technically tested on EXT4 and will need to be validated for XFS
 		supported, err := fsquota.ProjectQuotasSupported(config.Get().System.Data)
 		if err != nil {
-			return
+			return err
 		}
 		if !supported {
 			return errors.New("project quotas not enabled")
 		}
+
 		fstype = "exfs"
-		return
+		return err
 	case FSBTRFS:
 		fstype = "btrfs"
 		return errors.New("btrfs is not supported on this filesystem")
