@@ -18,14 +18,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/pelican/wings/config"
-	"github.com/pelican/wings/internal/models"
-	"github.com/pelican/wings/internal/ufs"
-	"github.com/pelican/wings/router/downloader"
-	"github.com/pelican/wings/router/middleware"
-	"github.com/pelican/wings/router/tokens"
-	"github.com/pelican/wings/server"
-	"github.com/pelican/wings/server/filesystem"
+	"github.com/pelican-dev/wings/config"
+	"github.com/pelican-dev/wings/internal/models"
+	"github.com/pelican-dev/wings/router/downloader"
+	"github.com/pelican-dev/wings/router/middleware"
+	"github.com/pelican-dev/wings/router/tokens"
+	"github.com/pelican-dev/wings/server"
+	"github.com/pelican-dev/wings/server/filesystem"
 )
 
 // getServerFileContents returns the contents of a file on the server.
@@ -237,10 +236,9 @@ func postServerDeleteFiles(c *gin.Context) {
 			case <-ctx.Done():
 				return ctx.Err()
 			default:
-				return s.Filesystem().SafeDeleteRecursively(pi)
+				return s.Filesystem().Delete(pi)
 			}
 		})
-
 	}
 
 	if err := g.Wait(); err != nil {
@@ -408,12 +406,13 @@ func postServerCreateDirectory(c *gin.Context) {
 	}
 
 	if err := s.Filesystem().CreateDirectory(data.Name, data.Path); err != nil {
-		if errors.Is(err, ufs.ErrNotDirectory) {
+		if err.Error() == "not a directory" {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"error": "Part of the path being created is not a directory (ENOTDIR).",
 			})
 			return
 		}
+
 		if errors.Is(err, os.ErrExist) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"error": "Cannot create directory, name conflicts with an existing file by the same name.",
@@ -462,7 +461,7 @@ func postServerCompressFiles(c *gin.Context) {
 	// The extention comes from the panel
 	// Supported are: zip, tar.gz, tar.bz2, tar.xz
 	// No need to check if it is empty or wrong as if data.Extention is wrong the function falls back to tar.gz
-	f, mimetype, err := s.Filesystem().CompressFiles(data.RootPath, data.Name, data.Files, data.Extension)
+	f, err := s.Filesystem().CompressFiles(data.RootPath, data.Name, data.Files, data.Extension)
 	if err != nil {
 		middleware.CaptureAndAbort(c, err)
 		return
