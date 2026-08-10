@@ -16,9 +16,8 @@ import (
 	"github.com/mholt/archives"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/pelican/wings/config"
-	"github.com/pelican/wings/remote"
-	"github.com/pelican/wings/server/filesystem"
+	"github.com/pelican-dev/wings/config"
+	"github.com/pelican-dev/wings/remote"
 )
 
 var format = archives.CompressedArchive{
@@ -52,7 +51,7 @@ type BackupInterface interface {
 	WithLogContext(map[string]interface{})
 	// Generate creates a backup in whatever the configured source for the
 	// specific implementation is.
-	Generate(context.Context, *filesystem.Filesystem, string) (*ArchiveDetails, error)
+	Generate(context.Context, string, string) (*ArchiveDetails, error)
 	// Ignored returns the ignored files for this backup instance.
 	Ignored() string
 	// Checksum returns a SHA1 checksum for the generated backup.
