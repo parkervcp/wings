@@ -14,10 +14,11 @@ import (
 	"github.com/apex/log"
 	"github.com/google/uuid"
 	"github.com/mholt/archives"
+	"github.com/pelican/wings/server/filesystem"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/pelican-dev/wings/config"
-	"github.com/pelican-dev/wings/remote"
+	"github.com/pelican/wings/config"
+	"github.com/pelican/wings/remote"
 )
 
 var format = archives.CompressedArchive{
@@ -51,7 +52,7 @@ type BackupInterface interface {
 	WithLogContext(map[string]interface{})
 	// Generate creates a backup in whatever the configured source for the
 	// specific implementation is.
-	Generate(context.Context, string, string) (*ArchiveDetails, error)
+	Generate(context.Context, *filesystem.Filesystem, string) (*ArchiveDetails, error)
 	// Ignored returns the ignored files for this backup instance.
 	Ignored() string
 	// Checksum returns a SHA1 checksum for the generated backup.

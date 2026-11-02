@@ -82,8 +82,8 @@ func (b *LocalBackup) WithLogContext(c map[string]interface{}) {
 
 // Generate generates a backup of the selected files and pushes it to the
 // defined location for this instance.
-func (b *LocalBackup) Generate(ctx context.Context, basePath, ignore string) (*ArchiveDetails, error) {
-	r, err := os.OpenRoot(basePath)
+func (b *LocalBackup) Generate(ctx context.Context, fsys *filesystem.Filesystem, ignore string) (*ArchiveDetails, error) {
+	r, err := os.OpenRoot(fsys.Path())
 	if err != nil {
 		return nil, errors.Wrap(err, "server/backup: failed to open root directory")
 	}

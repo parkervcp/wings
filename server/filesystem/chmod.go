@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"emperror.dev/errors"
-	"github.com/pelican-dev/wings/config"
+	"github.com/pelican/wings/config"
 )
 
 func (fs *Filesystem) Chmod(path string, mode os.FileMode) error {

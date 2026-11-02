@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-
 	"emperror.dev/errors"
 )
 
@@ -13,11 +12,9 @@ func (fs *Filesystem) IsIgnored(paths ...string) error {
 		//if err != nil {
 		//	return err
 		//}
-		// TODO: update logic to use unixFS
 		if fs.denylist.MatchesPath(p) {
 			return errors.WithStack(&Error{code: ErrCodeDenylistFile, path: p, resolved: p})
 		}
 	}
 	return nil
 }
-

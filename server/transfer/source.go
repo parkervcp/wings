@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"emperror.dev/errors"
-	"github.com/pelican-dev/wings/config"
+	"github.com/pelican/wings/config"
 )
 
 // PushArchiveToTarget POSTs the archive to the target node and returns the
@@ -34,7 +34,7 @@ func (t *Transfer) PushArchiveToTarget(url, token string, backups []string) ([]b
 	}
 	defer r.Close()
 
-	a, err := t.Archive(r)	
+	a, err := t.Archive(r)
 	if err != nil {
 		t.Error(err, "Failed to get archive for transfer.")
 		return nil, errors.New("failed to get archive for transfer")

@@ -15,7 +15,7 @@ import (
 
 	. "github.com/franela/goblin"
 
-	"github.com/pelican-dev/wings/config"
+	"github.com/pelican/wings/config"
 )
 
 type testFs struct {
@@ -138,7 +138,7 @@ func TestFilesystem_Touch(t *testing.T) {
 		g.It("enforces disk limits while writing to the returned handle", func() {
 			fs.SetDiskLimit(10)
 
-			f, err := fs.Touch("quota.txt", ufs.O_RDWR|ufs.O_TRUNC)
+			f, err := fs.Touch("quota.txt", os.O_RDWR|os.O_TRUNC, os.FileMode(0o644))
 			g.Assert(err).IsNil()
 			defer f.Close()
 
@@ -157,7 +157,7 @@ func TestFilesystem_Touch(t *testing.T) {
 		g.It("enforces disk limits while sequentially writing to the returned handle", func() {
 			fs.SetDiskLimit(10)
 
-			f, err := fs.Touch("quota.txt", ufs.O_RDWR|ufs.O_TRUNC)
+			f, err := fs.Touch("quota.txt", os.O_RDWR|os.O_TRUNC, os.FileMode(0o644))
 			g.Assert(err).IsNil()
 			defer f.Close()
 
@@ -193,7 +193,7 @@ func TestFilesystem_Touch(t *testing.T) {
 		g.It("does not reset disk usage after a failed huge-offset write", func() {
 			const usage = int64(5 * 1024 * 1024)
 			fs.SetDiskLimit(10 * 1024 * 1024)
-			fs.unixFS.SetUsage(usage)
+			fs.Filesystem.SetUsage(usage)
 
 			f, err := fs.Touch("quota.txt", ufs.O_RDWR|ufs.O_TRUNC)
 			g.Assert(err).IsNil()

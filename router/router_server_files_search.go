@@ -8,10 +8,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/pelican-dev/wings/config"
-	"github.com/pelican-dev/wings/router/middleware"
-	"github.com/pelican-dev/wings/server"
-	"github.com/pelican-dev/wings/server/filesystem"
+	"github.com/pelican/wings/config"
+	"github.com/pelican/wings/router/middleware"
+	"github.com/pelican/wings/server"
+	"github.com/pelican/wings/server/filesystem"
 )
 
 // Structs needed to respond with the matched files and all their info

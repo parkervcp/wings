@@ -9,14 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"emperror.dev/errors"
 	"github.com/juju/ratelimit"
 	"github.com/klauspost/pgzip"
+	ignore "github.com/sabhiram/go-gitignore"
 
-	"github.com/pelican-dev/wings/config"
-	"github.com/pelican-dev/wings/internal/progress"
+	"github.com/pelican/wings/config"
+	"github.com/pelican/wings/internal/progress"
 )
 
 const memory = 4 * 1024

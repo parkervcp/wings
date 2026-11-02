@@ -231,6 +231,7 @@ func (fs *Filesystem) HasSpaceFor(size int64) error {
 	return nil
 }
 
+// reserveDisk reserves space for a file to be added
 func (fs *Filesystem) reserveDisk(size int64) error {
 	if size <= 0 {
 		return nil
@@ -242,10 +243,11 @@ func (fs *Filesystem) reserveDisk(size int64) error {
 	if err := fs.HasSpaceFor(size); err != nil {
 		return err
 	}
-	fs.unixFS.Add(size)
+	fs.addDisk(size)
 	return nil
 }
 
+// adjustDisk adjusts the disk space uses.
 func (fs *Filesystem) adjustDisk(size int64) int64 {
 	if size == 0 {
 		return fs.CachedUsage()
@@ -254,10 +256,10 @@ func (fs *Filesystem) adjustDisk(size int64) int64 {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	return fs.unixFS.Add(size)
+	return fs.addDisk(size)
 }
 
-// Updates the disk usage for the Filesystem instance.
+// addDisk Updates the disk usage for the Filesystem instance.
 func (fs *Filesystem) addDisk(i int64) int64 {
 	size := atomic.LoadInt64(&fs.diskUsed)
 

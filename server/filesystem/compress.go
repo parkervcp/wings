@@ -4,15 +4,20 @@ import (
 	"context"
 	"fmt"
 	"io"
+	iofs "io/fs"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"emperror.dev/errors"
+	"github.com/klauspost/compress/zip"
 	"github.com/mholt/archives"
-	"github.com/pelican-dev/wings/internal"
+
+	"github.com/pelican/wings/internal"
 )
 
 type extractOptions struct {
@@ -34,7 +39,7 @@ type extractOptions struct {
 func (fs *Filesystem) CompressFiles(ctx context.Context, dir string, name string, paths []string, extension string) (os.FileInfo, string, error) {
 	// Build the archive instance purely to reuse its validation + matcher
 	// construction (WithMatching handles the ignored/matching mutual-exclusion
-	// check and the leading-slash allowlist semantics). 
+	// check and the leading-slash allowlist semantics).
 	a, err := NewArchive(fs.root, dir, WithMatching(paths))
 	if err != nil {
 		return nil, "", errors.WrapIf(err, "server/filesystem: compress: failed to create archive instance")
@@ -108,7 +113,6 @@ func (fs *Filesystem) CompressFiles(ctx context.Context, dir string, name string
 		filesMap[absolutePath] = file
 	}
 
-
 	if len(filesMap) == 0 {
 		return nil, "", fmt.Errorf("no valid files to compress")
 	}
@@ -172,7 +176,7 @@ func (fs *Filesystem) CompressFiles(ctx context.Context, dir string, name string
 }
 
 func (fs *Filesystem) archiverFileSystem(ctx context.Context, p string) (iofs.FS, io.Closer, error) {
-	f, err := fs.unixFS.Open(p)
+	f, err := fs.root.Open(p)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -212,7 +216,7 @@ func (fs *Filesystem) archiverFileSystem(ctx context.Context, p string) (iofs.FS
 		case archives.Extraction:
 			return &archives.ArchiveFS{Stream: io.NewSectionReader(f, 0, info.Size()), Format: ff, Context: ctx}, f, nil
 		case archives.Compression:
-			return archiverext.FileFS{File: f, Compression: ff}, f, nil
+			return fs.root.FS(), f, nil
 		}
 	}
 	_ = f.Close()
@@ -261,8 +265,8 @@ func (fs *Filesystem) SpaceAvailableForDecompression(ctx context.Context, dir st
 				return newFilesystemError(ErrCodeDiskSpace, nil)
 			}
 			next := current + fileSize
-			if !fs.unixFS.CanFit(next) {			
-				return newFilesystemError(ErrCodeDiskSpace, nil)
+			if err = fs.HasSpaceFor(next); err != nil {
+				return err
 			}
 			size.Store(next)
 			return nil

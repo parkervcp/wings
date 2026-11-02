@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	"emperror.dev/errors"
@@ -59,7 +59,7 @@ func (s *S3Backup) Generate(ctx context.Context, fsys *filesystem.Filesystem, ig
 	}
 	defer s.Remove()
 
-	r, err := os.OpenRoot(basePath)
+	r, err := os.OpenRoot(fsys.Path())
 	if err != nil {
 		return nil, errors.Wrap(err, "backup: failed to open root directory")
 	}
@@ -148,7 +148,7 @@ func (s *S3Backup) generateRemoteRequest(ctx context.Context, rc *os.File) ([]re
 	if concurrency <= 0 {
 		concurrency = 1
 	}
-	
+
 	uploader := newS3FileUploader(concurrency)
 	// Close all connections when the function completes
 	defer uploader.client.CloseIdleConnections()
@@ -203,18 +203,18 @@ type s3FileUploader struct {
 
 // newS3FileUploader returns a new file uploader instance.
 func newS3FileUploader(concurrency int) *s3FileUploader {
-    t := http.DefaultTransport.(*http.Transport).Clone()
+	t := http.DefaultTransport.(*http.Transport).Clone()
 	// DefaultTransport keeps only 2 idle connections per host, so most of the
 	// concurrent parts would pay for a fresh TCP + TLS handshake.
 	t.MaxIdleConnsPerHost = concurrency
-	
+
 	return &s3FileUploader{
 		// We purposefully use a super high timeout on this request since we need to upload
 		// a 5GB file. This assumes at worst a 10Mbps connection for uploading. While technically
 		// you could go slower we're targeting mostly hosted servers that should have 100Mbps
 		// connections anyways.
 		client: &http.Client{
-			Timeout: time.Hour * 2,
+			Timeout:   time.Hour * 2,
 			Transport: t,
 		},
 	}
@@ -272,8 +272,8 @@ func (fu *s3FileUploader) uploadPart(ctx context.Context, part string, section *
 			return errors.Wrap(err, "backup: S3 HTTP request failed")
 		}
 		// Drain the body so the connection can go back to the idle pool. On an
-        // error S3 returns XML that would otherwise leave the connection unusable.
-        _, _ = io.Copy(io.Discard, res.Body)
+		// error S3 returns XML that would otherwise leave the connection unusable.
+		_, _ = io.Copy(io.Discard, res.Body)
 		_ = res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {

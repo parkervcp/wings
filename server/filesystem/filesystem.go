@@ -18,8 +18,8 @@ import (
 	"github.com/gabriel-vasile/mimetype"
 	ignore "github.com/sabhiram/go-gitignore"
 
-	"github.com/pelican-dev/wings/config"
-	"github.com/pelican-dev/wings/system"
+	"github.com/pelican/wings/config"
+	"github.com/pelican/wings/system"
 )
 
 type Filesystem struct {

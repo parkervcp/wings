@@ -2,6 +2,7 @@ package sftp
 
 import (
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -105,7 +106,7 @@ func (h *Handler) Fileread(request *sftp.Request) (io.ReaderAt, error) {
 	defer h.mu.Unlock()
 	if err := h.fs.IsIgnored(request.Filepath); err != nil {
 		return nil, err
-	}	
+	}
 	f, _, err := h.fs.File(request.Filepath)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
@@ -134,7 +135,7 @@ func (h *Handler) Filewrite(request *sftp.Request) (io.WriterAt, error) {
 
 	if err := h.fs.IsIgnored(request.Filepath); err != nil {
 		return nil, err
-	}	
+	}
 	// The specific permission required to perform this action. If the file exists on the
 	// system already it only needs to be an update, otherwise we'll check for a create.
 	permission := PermissionFileUpdate
@@ -152,7 +153,7 @@ func (h *Handler) Filewrite(request *sftp.Request) (io.WriterAt, error) {
 	if !h.can(permission) {
 		return nil, sftp.ErrSSHFxPermissionDenied
 	}
-	f, err := h.fs.Touch(request.Filepath, os.O_RDWR|os.O_TRUNC)
+	f, err := h.fs.Touch(request.Filepath, os.O_RDWR|os.O_TRUNC, request.Attributes().FileMode())
 	if err != nil {
 		l.WithField("flags", request.Flags).WithField("error", err).Error("failed to open existing file on system")
 		return nil, sftp.ErrSSHFxFailure
@@ -178,10 +179,10 @@ func (h *Handler) Filecmd(request *sftp.Request) error {
 	if request.Target != "" {
 		l = l.WithField("target", request.Target)
 	}
-	
+
 	if err := h.fs.IsIgnored(request.Filepath); err != nil {
 		return err
-	}	
+	}
 
 	switch request.Method {
 	// Allows a user to make changes to the permissions of a given file or directory
@@ -297,13 +298,21 @@ func (h *Handler) Filelist(request *sftp.Request) (sftp.ListerAt, error) {
 	if !h.can(PermissionFileRead) {
 		return nil, sftp.ErrSSHFxPermissionDenied
 	}
-
+	var entries []fs.FileInfo
 	switch request.Method {
 	case "List":
-		entries, err := h.fs.ReadDirStat(request.Filepath)
+		dirEntries, err := h.fs.ReadDir(request.Filepath)
 		if err != nil {
 			h.logger.WithField("source", request.Filepath).WithField("error", err).Error("error while listing directory")
 			return nil, sftp.ErrSSHFxFailure
+		}
+
+		for _, entry := range dirEntries {
+			entryInfo, entryErr := entry.Info()
+			if entryErr != nil {
+				continue
+			}
+			entries = append(entries, entryInfo)
 		}
 		return ListerAt(entries), nil
 	case "Stat":

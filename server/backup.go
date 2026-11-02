@@ -71,7 +71,7 @@ func (s *Server) Backup(b backup.BackupInterface) error {
 		}
 	}
 
-	ad, err := b.Generate(s.Context(), s.Filesystem().Path(), ignored)
+	ad, err := b.Generate(s.Context(), s.Filesystem(), ignored)
 	if err != nil {
 		if err := s.notifyPanelOfBackup(b.Identifier(), &backup.ArchiveDetails{}, false); err != nil {
 			s.Log().WithFields(log.Fields{
